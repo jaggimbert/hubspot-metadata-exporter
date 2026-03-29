@@ -54,7 +54,7 @@ async function main() {
   console.log(`Found ${objectMap.size} object types to process.\n`);
 
   // 3. Fetch properties and schema details for each object
-  const objects = [];
+  const objects = {};
 
   for (const [objectType, { schema }] of objectMap) {
     console.log(`  Processing: ${objectType}`);
@@ -87,8 +87,7 @@ async function main() {
       name: a.name || a.id,
     }));
 
-    objects.push({
-      name: objectType,
+    objects[objectType] = {
       objectTypeId: schemaDetail?.objectTypeId || null,
       fullyQualifiedName: schemaDetail?.fullyQualifiedName || objectType,
       labels: schemaDetail?.labels || { singular: objectType, plural: objectType },
@@ -112,22 +111,62 @@ async function main() {
       associations,
       associationCount: associations.length,
       ...(error ? { error } : {}),
-    });
+    };
   }
 
-  // 4. Write output
+  // 4. Fetch workflow metadata
+  console.log("\nFetching workflows...");
+  const workflows = {};
+  try {
+    let after;
+    do {
+      const url = new URL("https://api.hubapi.com/automation/v4/flows");
+      url.searchParams.set("limit", "100");
+      if (after) url.searchParams.set("after", after);
+
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+      const data = await res.json();
+
+      for (const wf of data.results || []) {
+        workflows[wf.id] = {
+          name: wf.name,
+          type: wf.type,
+          enabled: wf.enabled,
+          description: wf.description || null,
+          actionCount: (wf.actions || []).length,
+          enrollmentCriteria: wf.enrollmentCriteria || null,
+          createdAt: wf.createdAt,
+          updatedAt: wf.updatedAt,
+        };
+      }
+
+      after = data.paging?.next?.after;
+    } while (after);
+
+    console.log(`  Found ${Object.keys(workflows).length} workflows.`);
+  } catch (err) {
+    console.warn("  Warning: Could not fetch workflows:", err.message);
+  }
+
+  // 5. Write output
   const output = {
     exportedAt: new Date().toISOString(),
-    objectCount: objects.length,
+    objectCount: Object.keys(objects).length,
     objects,
+    workflowCount: Object.keys(workflows).length,
+    workflows,
   };
 
   mkdirSync("output", { recursive: true });
   const outputPath = "output/hubspot-metadata.json";
   writeFileSync(outputPath, JSON.stringify(output, null, 2));
 
-  const totalProps = objects.reduce((sum, o) => sum + o.propertyCount, 0);
-  console.log(`\nDone! Exported ${objects.length} objects with ${totalProps} total properties.`);
+  const totalProps = Object.values(objects).reduce((sum, o) => sum + o.propertyCount, 0);
+  console.log(`\nDone! Exported ${Object.keys(objects).length} objects with ${totalProps} total properties.`);
+  console.log(`Exported ${Object.keys(workflows).length} workflows.`);
   console.log(`Output: ${outputPath}`);
 }
 

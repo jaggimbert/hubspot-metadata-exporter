@@ -4,8 +4,7 @@ Exports all HubSpot CRM object metadata — properties, associations, and schema
 
 ## What it exports
 
-For each CRM object (standard + custom), the output includes:
-
+**CRM objects** (standard + custom):
 - Object name, ID, labels, and fully qualified name
 - All properties with type, field type, group, options, and timestamps
 - Associations to other objects
@@ -14,6 +13,13 @@ For each CRM object (standard + custom), the output includes:
 **Standard objects covered:** contacts, companies, deals, tickets, line_items, products, quotes, calls, emails, meetings, notes, tasks
 
 Custom objects are discovered automatically via the schemas API.
+
+**Workflows:**
+- Name, type, and enabled status
+- Description
+- Action count
+- Enrollment criteria (triggers)
+- Created/updated timestamps
 
 ## Prerequisites
 
@@ -54,9 +60,8 @@ Output is written to `output/hubspot-metadata.json`.
 {
   "exportedAt": "2026-03-29T00:00:00.000Z",
   "objectCount": 14,
-  "objects": [
-    {
-      "name": "contacts",
+  "objects": {
+    "contacts": {
       "objectTypeId": "0-1",
       "fullyQualifiedName": "contacts",
       "labels": { "singular": "Contact", "plural": "Contacts" },
@@ -67,7 +72,20 @@ Output is written to `output/hubspot-metadata.json`.
       "associations": [...],
       "associationCount": 5
     }
-  ]
+  },
+  "workflowCount": 10,
+  "workflows": {
+    "123456789": {
+      "name": "New Lead Nurture",
+      "type": "DRIP_DELAY",
+      "enabled": true,
+      "description": null,
+      "actionCount": 5,
+      "enrollmentCriteria": {...},
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-06-01T00:00:00.000Z"
+    }
+  }
 }
 ```
 
