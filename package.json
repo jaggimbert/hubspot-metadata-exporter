@@ -1,0 +1,14 @@
+{
+  "name": "hubspot-metadata-exporter",
+  "version": "1.0.0",
+  "description": "Exports all HubSpot object metadata to a JSON file",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@hubspot/api-client": "^12.0.1",
+    "dotenv": "^16.4.7"
+  }
+}
